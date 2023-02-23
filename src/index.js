@@ -20,7 +20,8 @@ loadMoreBtn.addEventListener('click', onLoadMoreBtn)
 onScroll()
 onToTopBtn()
 
-function onSearchForm(e) {
+async function onSearchForm(e) {
+  try {
   e.preventDefault()
   window.scrollTo({ top: 0 })
   page = 1
@@ -33,41 +34,48 @@ function onSearchForm(e) {
     return
   }
 
-  fetchImages(query, page, perPage)
-    .then(({ data }) => {
-      if (data.totalHits === 0) {
-        alertNoImagesFound()
-      } else {
-        renderGallery(data.hits)
-        simpleLightBox = new SimpleLightbox('.gallery a').refresh()
-        alertImagesFound(data)
-
-        if (data.totalHits > perPage) {
-          loadMoreBtn.classList.remove('is-hidden')
-        }
-      }
-    })
-    .catch(error => console.log(error))
+  const response = await fetchImages(query, page, perPage)
+  const data = response.data
+  if (data.totalHits === 0) {
+    alertNoImagesFound()
+  }
+  else {
+    renderGallery(data.hits)
+    simpleLightBox = new SimpleLightbox('.gallery a').refresh()
+    alertImagesFound(data)
+  }
+  if (data.totalHits > perPage) {
+    loadMoreBtn.classList.remove('is-hidden')
+  }   
+  
+} catch (error) {
+  (error => console.log(error))
 }
 
-function onLoadMoreBtn() {
+}
+
+async function onLoadMoreBtn() {
+try {
   page += 1
   simpleLightBox.destroy()
 
-  fetchImages(query, page, perPage)
-    .then(({ data }) => {
+  const response = await fetchImages(query, page, perPage)
+  const data = response.data;
       renderGallery(data.hits)
       simpleLightBox = new SimpleLightbox('.gallery a').refresh()
 
       const totalPages = Math.ceil(data.totalHits / perPage)
+      console.log(totalPages);
 
-      if (page > totalPages) {
+      if (perPage > data.totalHits || page === totalPages) {
         loadMoreBtn.classList.add('is-hidden')
         alertEndOfSearch()
       }
-    })
-    .catch(error => console.log(error))
-}
+} catch (error) {
+  console.log(error)
+}  
+    }
+
 
 function alertImagesFound(data) {
   Notiflix.Notify.success(`Hooray! We found ${data.totalHits} images.`)
@@ -82,5 +90,6 @@ function alertNoImagesFound() {
 }
 
 function alertEndOfSearch() {
+  loadMoreBtn.classList.add('is-hidden')
   Notiflix.Notify.failure("We're sorry, but you've reached the end of search results.")
 }
